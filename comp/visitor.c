@@ -275,7 +275,7 @@ static void leave_funccallexpr(Expression* expr) {
     fprintf(stderr, "leave function call\n");
 }
 
-
+/* visitorのメモリexpressionの個数分確保してenter/leave関数のポインタを格納する */
 Visitor* create_treeview_visitor() {
     visit_expr* enter_expr_list;
     visit_expr* leave_expr_list;

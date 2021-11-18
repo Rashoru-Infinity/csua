@@ -17,6 +17,7 @@ static void init_storage() {
     }
 }
 
+/* size分メモリを確保する */
 static void* cs_malloc(size_t size) {
     init_storage();
     return MEM_storage_malloc(storage, size);
@@ -30,6 +31,7 @@ static Expression* cs_create_expression(ExpressionKind ekind) {
     expr->kind = ekind;
     return expr;
 }
+/* intのtreeのnodeを生成する */
 Expression* cs_create_int_expression(int v) {
     Expression* expr = cs_create_expression(INT_EXPRESSION);
     expr->u.int_value = v;
@@ -44,6 +46,7 @@ void delete_storage() {
 #endif            
 }
 
+/* expressionのchainの末尾に新たなexpressionを追加する */
 ExpressionList* cs_chain_expression_list(ExpressionList* list, Expression* expr) {
     ExpressionList* p = list;
     ExpressionList* nlist= (ExpressionList*)MEM_storage_malloc(storage, sizeof(ExpressionList));    
@@ -58,24 +61,28 @@ ExpressionList* cs_chain_expression_list(ExpressionList* list, Expression* expr)
     
 }
 
+/* doubleのtreeのnodeを生成する */
 Expression* cs_create_double_expression(double v) {
     Expression* expr = cs_create_expression(DOUBLE_EXPRESSION);
     expr->u.double_value = v;
     return expr;
 }
 
+/* booleanのtreeのnodeを生成する */
 Expression* cs_create_boolean_expression(CS_Boolean v) {
     Expression* expr = cs_create_expression(BOOLEAN_EXPRESSION);
     expr->u.boolean_value = v;
     return expr;
 }
 
+/* 変数名等のtreeのnodeを生成する */
 Expression* cs_create_identifier_expression(char* identifier) {
     Expression* expr = cs_create_expression(IDENTIFIER_EXPRESSION);
     expr->u.identifier.name = identifier;
     return expr;
 }
 
+/* ++, --のtreeのnodeを生成する */
 Expression* cs_create_inc_dec_expression(Expression* id_expr, ExpressionKind inc_dec) {
     Expression* expr = cs_create_expression(inc_dec);
     expr->u.inc_dec = id_expr;
@@ -83,24 +90,28 @@ Expression* cs_create_inc_dec_expression(Expression* id_expr, ExpressionKind inc
 }
 
 // args is argument not yet
+/* 関数呼び出し用のtreeのnodeを生成する 関数の引数をvoidポインタ型で渡す */
 Expression* cs_create_function_call_expression(Expression* function, void* args) {
     Expression* expr = cs_create_expression(FUNCTION_CALL_EXPRESSION);
     expr->u.function_call_expression.function = function;
     return expr;
 }
 
+/* マイナスのtreeのnodeを生成する */
 Expression* cs_create_minus_expression(Expression* operand) {
     Expression* expr = cs_create_expression(MINUS_EXPRESSION);
     expr->u.minus_expression = operand;
     return expr;
 }
 
+/* 条件の否定のtreeのnodeを生成する */
 Expression* cs_create_logical_not_expression(Expression* operand) {
     Expression* expr = cs_create_expression(LOGICAL_NOT_EXPRESSION);
     expr->u.logical_not_expression = operand;
     return expr;
 }
 
+/* +-*\/%のtreeのnodeを生成する */
 Expression* cs_create_binary_expression(ExpressionKind kind, Expression* left, Expression* right) {
     Expression* expr = cs_create_expression(kind);
     expr->u.binary_expression.left = left;
@@ -108,6 +119,7 @@ Expression* cs_create_binary_expression(ExpressionKind kind, Expression* left, E
     return expr;   
 }
 
+/* 代入のtreeのnodeを生成する */
 Expression* cs_create_assignment_expression(Expression *left, AssignmentOperator aope, Expression* operand) {
     Expression* expr = cs_create_expression(ASSIGN_EXPRESSION);
     expr->u.assignment_expression.aope = aope;
@@ -116,7 +128,7 @@ Expression* cs_create_assignment_expression(Expression *left, AssignmentOperator
     return expr;            
 }
         
-        
+/* 変数名を確保したしたメモリにコピーする */ 
 char* cs_create_identifier(const char* str) {
     char* new_char;
     new_char = (char*)cs_malloc(strlen(str) + 1);
