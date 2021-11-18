@@ -81,6 +81,7 @@ Expression* cs_create_logical_not_expression(Expression* operand) {
     return expr;
 }
 
+/* +-*\/%のtreeのnodeを生成する */
 Expression* cs_create_binary_expression(ExpressionKind kind, Expression* left, Expression* right) {
     Expression* expr = cs_create_expression(kind);
     expr->u.binary_expression.left = left;
