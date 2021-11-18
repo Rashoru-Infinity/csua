@@ -23,6 +23,7 @@ void traverse_expr(Expression* expr, Visitor* visitor) {
     }    
 }
 
+/* プリミティブ型や変数のexpression以外はtraverse_exprを呼び出してastを末端まで探索する */
 static void traverse_expr_children(Expression* expr, Visitor *visitor) {
     switch(expr->kind) {
         case BOOLEAN_EXPRESSION:
