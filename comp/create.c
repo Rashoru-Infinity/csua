@@ -23,6 +23,7 @@ static void* cs_malloc(size_t size) {
     return MEM_storage_malloc(storage, size);
 }
 
+/* nodeのメモリを確保してexpressionの種類を設定する */
 static Expression* cs_create_expression(ExpressionKind ekind) {
 //    init_storage();
 //    Expression *expr = (Expression*)MEM_storage_malloc(storage, sizeof(Expression));    
