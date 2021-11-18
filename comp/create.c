@@ -136,6 +136,7 @@ char* cs_create_identifier(const char* str) {
 }
 
 /* For Statement */
+/* 文のtreeのnodeを生成する */
 static Statement* cs_create_statement(StatementType type) {
     //Expression* expr = (Expression*)cs_malloc(sizeof(Expression));   
     Statement* stmt = (Statement*)cs_malloc(sizeof(Statement));
@@ -143,6 +144,7 @@ static Statement* cs_create_statement(StatementType type) {
     return stmt;    
 }
 
+/* 文中の式を設定する */
 Statement* cs_create_expression_statement(Expression* expr) {
     Statement* stmt = cs_create_statement(EXPRESSION_STATEMENT);
     stmt->u.expression_s = expr;
@@ -150,6 +152,7 @@ Statement* cs_create_expression_statement(Expression* expr) {
 }
 
 
+/* データ型のtreeのnodeを生成する */
 static TypeSpecifier* cs_create_type_specifier(CS_BasicType type) {
     TypeSpecifier* ts = (TypeSpecifier*)cs_malloc(sizeof(TypeSpecifier));
     ts->basic_type = type;
@@ -157,6 +160,7 @@ static TypeSpecifier* cs_create_type_specifier(CS_BasicType type) {
     return ts;
 }
 
+/* 宣言文でのデータ型/変数名/初期値(expression)を生成したtreeのnodeに設定する */
 static Declaration* cs_create_declaration(CS_BasicType type, char* name, Expression* initializer) {
     Declaration* decl = (Declaration*)cs_malloc(sizeof(Declaration));
     decl->type = cs_create_type_specifier(type);
@@ -166,13 +170,14 @@ static Declaration* cs_create_declaration(CS_BasicType type, char* name, Express
     return decl;        
 }
 
+/* 宣言文のtreeのnodeを生成と変数の型/名前/初期値(expression)を設定 */
 Statement* cs_create_declaration_statement(CS_BasicType type, char* name, Expression* initializer) {
     Statement* stmt = cs_create_statement(DECLARATION_STATEMENT);
     stmt->u.declaration_s = cs_create_declaration(type, name, initializer);   
-    return stmt;    
+    return stmt;
 }
 
-
+/* 文のリストの要素を生成して設定する */
 StatementList* cs_create_statement_list(Statement* stmt) {
     StatementList* stmt_list = (StatementList*)cs_malloc(sizeof(StatementList));
     stmt_list->stmt = stmt;
@@ -180,6 +185,7 @@ StatementList* cs_create_statement_list(Statement* stmt) {
     return stmt_list;
 }
 
+/* リストの末尾に新たな文を追加する */
 StatementList* cs_chain_statement_list(StatementList* stmt_list, Statement* stmt) {
     StatementList* p = NULL;
     StatementList* nstmt_list = cs_create_statement_list(stmt);

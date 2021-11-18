@@ -25,6 +25,7 @@ void traverse_expr(Expression* expr, Visitor* visitor) {
     }    
 }
 
+/* 文をtraverseする */
 void traverse_stmt(Statement* stmt, Visitor* visitor) {
     if (stmt) {
         if (visitor->enter_stmt_list[stmt->type] == NULL) {
@@ -37,6 +38,7 @@ void traverse_stmt(Statement* stmt, Visitor* visitor) {
     }
 }
 
+/* 文中の式をtraverse_exprを呼び出してtraverseする */
 static void traverse_stmt_children(Statement* stmt, Visitor* visitor) {
     switch(stmt->type) {
         case EXPRESSION_STATEMENT: {
