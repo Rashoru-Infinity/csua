@@ -4,7 +4,7 @@
 #include "csua.h"
 
 
-
+/* CS_Compilerを生成する */
 CS_Compiler* CS_create_compiler() {
     MEM_Storage storage;
     CS_Compiler *compiler;    
@@ -14,6 +14,7 @@ CS_Compiler* CS_create_compiler() {
     compiler->expr_list = NULL;
     compiler->stmt_list = NULL;
     
+    /* current_compilerに生成したコンパイラのポインタを渡す */
     cs_set_current_compiler(compiler);
     
     return compiler;
@@ -24,6 +25,7 @@ void CS_delete_compiler(CS_Compiler* compiler) {
     MEM_dispose(storage);
 }
 
+/* yaccで解析してExpressionのchainを生成する */
 void CS_compile(CS_Compiler* compiler, FILE *fin) {
     extern int yyparse(void);
     extern FILE *yyin;
