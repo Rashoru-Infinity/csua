@@ -7,7 +7,6 @@
 #include "../memory/MEM.h"
 
 
-
 #define cs_is_type(type, cs_type) \
   ((type)->basic_type == (cs_type))
 
@@ -39,7 +38,7 @@ char* get_type_name(CS_BasicType type) {
     }
 }
 
-
+/* 意味解析のログを追加する */
 static void add_check_log(const char* str, Visitor* visitor) {
     MeanCheckLogger* log = (MeanCheckLogger*)cs_malloc(sizeof(MeanCheckLogger));
     log->next = NULL;
@@ -97,6 +96,12 @@ static void leave_doubleexpr(Expression* expr, Visitor* visitor) {
 static void enter_identexpr(Expression* expr, Visitor* visitor) {
     fprintf(stderr, "enter identifierexpr\n");
 }
+
+/* 
+ * 変数名検索_____ある__ 式内の識別子は変数であると断定
+ *            |___ない__ 関数名検索____ある__式内の識別子は関数であると断定
+ *                                  |__ない__エラー
+ */
 static void leave_identexpr(Expression* expr, Visitor* visitor) {
     fprintf(stderr, "leave identifierexpr %s\n", expr->u.identifier.name);
     Declaration* decl = cs_search_decl_in_block();
@@ -124,6 +129,7 @@ static void leave_identexpr(Expression* expr, Visitor* visitor) {
     add_check_log(message, visitor); 
 }
 
+/* 演算子の左右のオペランドの型が未定義になっていないか確認 */
 static CS_Boolean check_nulltype_binary_expr(Expression* expr, Visitor* visitor) {
     Expression* left  = expr->u.binary_expression.left;
     Expression* right = expr->u.binary_expression.right;
@@ -143,6 +149,7 @@ static CS_Boolean check_nulltype_binary_expr(Expression* expr, Visitor* visitor)
     return CS_FALSE;    
 }
 
+/* コードが受理しなかった時のエラーメッセージをロガーに詰める */
 static void unacceptable_type_binary_expr(Expression* expr, Visitor* visitor) {
     Expression* left  = expr->u.binary_expression.left;
     Expression* right = expr->u.binary_expression.right;
@@ -155,6 +162,14 @@ static void unacceptable_type_binary_expr(Expression* expr, Visitor* visitor) {
     add_check_log(message, visitor);   
 }
 
+/* 
+ * 四則演算や余りの演算子の左右のオペランドの型に応じて型変換を行う
+ * int <-> int
+ * (double)int <-> double
+ * double <-> (double)int
+ * double <-> double 
+ * 式の型を設定する
+ */
 static void cast_arithmetic_binary_expr(Expression* expr, Visitor* visitor) {
     Expression* left  = expr->u.binary_expression.left;
     Expression* right = expr->u.binary_expression.right;
@@ -224,6 +239,10 @@ static void leave_modexpr(Expression* expr, Visitor* visitor) {
     cast_arithmetic_binary_expr(expr, visitor);    
 }
 
+/* 
+ * 数値型の時は必要に応じてキャスト/数値以外で型が異なる場合や型が未定義の場合はエラー
+ * 式の型を設定する
+ */
 static void compare_type_check(Expression* expr, Visitor* visitor) {
     Expression* left  = expr->u.binary_expression.left;
     Expression* right = expr->u.binary_expression.right;
@@ -284,6 +303,10 @@ static void leave_leexpr(Expression* expr, Visitor* visitor) {
     compare_type_check(expr, visitor);
 }
 
+/* 
+ * 演算子の左右のオペランドの型がbooleanではないときはエラーメッセージをロガーに詰める 
+ * 式の型を設定する
+ */
 static void compare_equality_type_check(Expression* expr, Visitor* visitor) {
     
     if (check_nulltype_binary_expr(expr, visitor)) {
@@ -327,7 +350,7 @@ static void leave_neexpr(Expression* expr, Visitor* visitor) {
     compare_equality_type_check(expr, visitor);
 }
 
-
+/* 演算子の左右のオペランドがboolean型か確認する */
 static void logical_type_check(Expression* expr, Visitor* visitor) {
     if (check_nulltype_binary_expr(expr, visitor)) {
         return;
@@ -367,7 +390,11 @@ static void leave_lorexpr(Expression* expr, Visitor* visitor) {
     logical_type_check(expr, visitor);
 }
 
-
+/*
+ * int型以外に++や--を使って以内か確認
+ * エラーの時はエラーメッセージをロガーに詰める
+ * 式の型を設定する
+ */
 static void incdec_typecheck(Expression* expr, Visitor* visitor) {
     Expression* idexpr = expr->u.inc_dec;
     char message[100];    
@@ -407,6 +434,12 @@ static void leave_decexpr(Expression* expr, Visitor* visitor) {
 static void enter_minusexpr(Expression* expr, Visitor* visitor) {
     fprintf(stderr, "enter minusexpr : - \n");
 }
+
+/* 
+ * マイナス符号が数値型以外に使われていないか確認
+ * エラーならエラーメッセージをロガーに詰める
+ * 式の型を設定する
+ */
 static void leave_minusexpr(Expression* expr, Visitor* visitor) {
     fprintf(stderr, "leave minusexpr\n");   
 
@@ -432,6 +465,12 @@ static void leave_minusexpr(Expression* expr, Visitor* visitor) {
 static void enter_lognotexpr(Expression* expr, Visitor* visitor) {
     fprintf(stderr, "enter lognotexpr : ! \n");
 }
+
+/*
+ * !(条件の否定)がboolean以外に使われていないか確認
+ * エラーならエラーメッセージをロガーに詰める
+ * 式の型を設定する
+ */
 static void leave_lognotexpr(Expression* expr, Visitor* visitor) {
     fprintf(stderr, "leave lognotexpr\n");
 
@@ -456,9 +495,12 @@ static void leave_lognotexpr(Expression* expr, Visitor* visitor) {
     }
 }
 
-
-
-
+/*
+ * 代入式の左右の型を確認する
+ * 型がintとdoubleまたはdoubleとintの時はキャストする
+ * 型を一致できないときはエラーメッセージをロガーに詰める
+ * 式の型を設定する
+ */
 static Expression* assignment_type_check(TypeSpecifier* ltype, Expression* expr, Visitor* visitor) {
     
     if (ltype == NULL) {
@@ -498,6 +540,8 @@ static Expression* assignment_type_check(TypeSpecifier* ltype, Expression* expr,
 static void enter_assignexpr(Expression* expr, Visitor* visitor) {
     fprintf(stderr, "enter assignexpr : %d \n", expr->u.assignment_expression.aope);
 }
+
+/* 演算子の左右のオペランドの型を確認して条件に応じて処理を行う */
 static void leave_assignexpr(Expression* expr, Visitor* visitor) {
     fprintf(stderr, "leave assignexpr\n");
     Expression* left  = expr->u.assignment_expression.left;
@@ -524,6 +568,7 @@ static void leave_exprstmt(Statement* stmt, Visitor* visitor) {
     fprintf(stderr, "leave exprstmt\n");
 }
 
+/* 宣言した変数をリストに追加する */
 static void enter_declstmt(Statement* stmt, Visitor* visitor) {
     CS_Compiler* compiler = ((MeanVisitor*)visitor)->compiler;
     compiler->decl_list = cs_chain_declaration(compiler->decl_list, stmt->u.declaration_s);
@@ -531,6 +576,7 @@ static void enter_declstmt(Statement* stmt, Visitor* visitor) {
     
 }
 
+/* 必要に応じてキャストnodeを追加する */
 static void leave_declstmt(Statement* stmt, Visitor* visitor) {
     fprintf(stderr, "leave declstmt\n");
     Declaration* decl = stmt->u.declaration_s;
@@ -539,7 +585,7 @@ static void leave_declstmt(Statement* stmt, Visitor* visitor) {
     }
 }
 
-
+/* 意味解析をするvisitorのメモリを確保してcompilerとenter/leave関数を設定して返す */
 MeanVisitor* create_mean_visitor() {
     visit_expr* enter_expr_list;
     visit_expr* leave_expr_list;

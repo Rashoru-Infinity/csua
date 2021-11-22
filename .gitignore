@@ -1,0 +1,9 @@
+*.o
+y.tab.*
+keyword.c
+y.output
+.*.*.swp
+.*.swp
+astt
+memtest
+meant
