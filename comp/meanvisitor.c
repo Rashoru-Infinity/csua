@@ -229,6 +229,7 @@ static void leave_exprstmt(Statement* stmt, Visitor* visitor) {
     fprintf(stderr, "leave exprstmt\n");
 }
 
+/* 宣言した変数をリストに追加する */
 static void enter_declstmt(Statement* stmt, Visitor* visitor) {
     CS_Compiler* compiler = ((MeanVisitor*)visitor)->compiler;
     compiler->decl_list = cs_chain_declaration(compiler->decl_list, stmt->u.declaration_s);
@@ -236,6 +237,7 @@ static void enter_declstmt(Statement* stmt, Visitor* visitor) {
     
 }
 
+/* 必要に応じてキャストnodeを追加する */
 static void leave_declstmt(Statement* stmt, Visitor* visitor) {
     fprintf(stderr, "leave declstmt\n");
     Declaration* decl = stmt->u.declaration_s;
@@ -244,7 +246,7 @@ static void leave_declstmt(Statement* stmt, Visitor* visitor) {
     }
 }
 
-
+/* 意味解析をするvisitorのメモリを確保してcompilerとenter/leave関数を設定して返す */
 MeanVisitor* create_mean_visitor() {
     visit_expr* enter_expr_list;
     visit_expr* leave_expr_list;
