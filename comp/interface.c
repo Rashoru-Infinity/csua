@@ -25,7 +25,7 @@ void CS_delete_compiler(CS_Compiler* compiler) {
     MEM_dispose(storage);
 }
 
-/* yaccで解析してExpressionのchainを生成する */
+/* yaccで解析してstatementのasttreeのchainを生成する */
 void CS_compile(CS_Compiler* compiler, FILE *fin) {
     extern int yyparse(void);
     extern FILE *yyin;

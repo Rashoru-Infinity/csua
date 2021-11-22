@@ -136,7 +136,7 @@ char* cs_create_identifier(const char* str) {
 }
 
 /* For Statement */
-/* 文のtreeのnodeを生成する */
+/* 文のリストの要素のメモリを確保をする */
 static Statement* cs_create_statement(StatementType type) {
     //Expression* expr = (Expression*)cs_malloc(sizeof(Expression));   
     Statement* stmt = (Statement*)cs_malloc(sizeof(Statement));
