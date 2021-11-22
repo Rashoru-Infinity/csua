@@ -10,6 +10,7 @@
 #include <string.h>
 #include "memory.h"
 
+/* 管理するメモリブロックとヘッダを含むリストのポインタを持つタグ */
 static struct MEM_Controller_tag st_default_controller = {
     NULL // Header
 };
@@ -47,6 +48,7 @@ union Header_tag {
     Align u[HEADER_ALIGN_SIZE];
 };
 
+/* headerに値をセットする */
 static void set_header(Header* header, size_t size, char* filename, int line) {
     header->s.size = size;
     header->s.filename = filename;
@@ -55,6 +57,7 @@ static void set_header(Header* header, size_t size, char* filename, int line) {
     memset(header->s.mark, MARK, (char*)&header[1] - (char*)header->s.mark);    
 }
 
+/* 自由に使えるメモリブロックの終端の4byteの領域を0xcdで埋める */
 static void set_footer(Header* header, size_t size) {
     uint8_t *ptr = (uint8_t*)&header[1] + size;
 //    fprintf(stderr, "header: %p, size = %zu, ptr = %p\n", header, size, ptr);
@@ -62,6 +65,7 @@ static void set_footer(Header* header, size_t size) {
     
 }
 
+/* new_headerをcontrollerの先頭に追加する */
 static void chain_header(MEM_Controller controller, Header* new_header) {
     if (controller->block_header == NULL) {
 //        fprintf(stderr, "chain first\n");
@@ -74,6 +78,7 @@ static void chain_header(MEM_Controller controller, Header* new_header) {
     controller->block_header = new_header;    
 }
 
+/* 引数のheaderの前後のheaderのprevやnextにheader自身のポインタをつける */
 static void rechain_header(MEM_Controller controller, Header* header) {
     if (header->s.prev) {
         header->s.prev->s.next = header;
@@ -85,6 +90,7 @@ static void rechain_header(MEM_Controller controller, Header* header) {
     }
 }
 
+/* current_headerをリストから外して繋ぎ変える */
 static void unchain_header(MEM_Controller controller, Header* current_header) {
     if (current_header->s.prev == NULL) { // controller->block_header points to it
         controller->block_header = current_header->s.next;
@@ -101,6 +107,7 @@ static void unchain_header(MEM_Controller controller, Header* current_header) {
     }
 }
 
+/* 16進メモリダンプを標準エラー出力する */
 void MEM_dump_memory_func(MEM_Controller controller) {
     Header *current_header = NULL;
     if ((current_header = controller->block_header) == NULL) {
@@ -127,6 +134,7 @@ void MEM_dump_memory_func(MEM_Controller controller) {
 
 }
 
+/* 自由に使えるメモリブロックおよびそのヘッダ/フッダのメモリを開放 */
 void MEM_free_func(MEM_Controller controller, void* bptr) {
     uint8_t *ptr = (uint8_t*)bptr - sizeof(Header);
 //    fprintf(stderr, "free ptr = %p\n", ptr);
@@ -136,11 +144,13 @@ void MEM_free_func(MEM_Controller controller, void* bptr) {
     free((void*)current_header);    
 }
 
+
+/* メモリを確保してヘッダに呼び出し元のコードの位置を入れる */
 void *MEM_malloc_func(MEM_Controller controller, char* filename, int line, size_t size) {
     uint8_t *ptr;
     uint32_t i;
 //    fprintf(stderr, "call mem_malloc_func\n");
-    uint32_t hsize = sizeof(Header);
+    //uint32_t hsize = sizeof(Header);
     
     size_t alloc_size = sizeof(Header) + size + MARK_SIZE;
     
@@ -155,10 +165,12 @@ void *MEM_malloc_func(MEM_Controller controller, char* filename, int line, size_
     set_header(header, size, filename, line);
     chain_header(controller, header);
     set_footer(header ,size);
+	/* header分のアドレスをずらして自由に使えるメモリブロックの先頭アドレスを返す */
     return (void*)&header[1];
     
 }
 
+/* 渡したポインタが確保しているメモリの大きさををリサイズする */
 void* MEM_realloc_func(MEM_Controller controller, char* filename, int line, void* ptr, size_t size) {
     void *new_ptr;
     void *real_ptr;
@@ -166,7 +178,6 @@ void* MEM_realloc_func(MEM_Controller controller, char* filename, int line, void
     int old_size;
     size_t alloc_size = sizeof(Header) + size + MARK_SIZE;
 //    fprintf(stderr, "alloc_size = %d\n", (int)alloc_size);
-
 
     if (ptr) {
         real_ptr = ptr - sizeof(Header);
@@ -189,7 +200,7 @@ void* MEM_realloc_func(MEM_Controller controller, char* filename, int line, void
     }
     
 //    fprintf(stderr, "new_ptr = %p\n", new_ptr);
-    
+    /* headerおよびfooter情報の更新 */
     if (ptr) {        
         *((Header*)new_ptr) = old_header;
         ((Header*)new_ptr)->s.size = size;
@@ -210,7 +221,7 @@ void* MEM_realloc_func(MEM_Controller controller, char* filename, int line, void
         memset((char*)new_ptr + old_size + sizeof(Header), 0xcc, size - old_size);
     }
     
-
+	/* header分のアドレスをずらして自由に使えるメモリブロックの先頭アドレスを返す */
     return (void*)&((Header*)new_ptr)[1];
 }
 

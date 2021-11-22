@@ -6,7 +6,7 @@
 #include "../memory/MEM.h"
 
 
-
+/* 受け取った式のtreeに対して必要に応じてキャスト式を付けて返す */
 static Expression* cast_type(TypeSpecifier* ltype, Expression* expr) {
 //    printf("ltype     = %d\n", ltype->basic_type);
 //    printf("expr type = %d\n", expr->type->basic_type);

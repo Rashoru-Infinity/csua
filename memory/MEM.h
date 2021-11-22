@@ -10,6 +10,8 @@ extern MEM_Controller mem_default_controller;
 
 /* For Open Interface */
 /* Malloc */
+/* __FILE__はファイル名のマクロ __LINE__はコード内の行数のマクロ */
+/* defineして引数sizeのみでもメモリ管理用リストと呼び出し元のコードの位置を渡せるようにする */
 #define MEM_malloc(size) MEM_malloc_func(mem_default_controller, __FILE__, __LINE__, size)
 #define MEM_dump_memory() MEM_dump_memory_func(mem_default_controller)
 #define MEM_free(ptr) MEM_free_func(mem_default_controller, ptr)

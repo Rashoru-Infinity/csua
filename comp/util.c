@@ -13,6 +13,7 @@ CS_Compiler* cs_get_current_compiler() {
     return current_compiler;
 }
 
+/* 宣言文のリストの末端に要素を追加する */
 DeclarationList* cs_chain_declaration(DeclarationList* decl_list, Declaration* decl) {
     DeclarationList* p;    
     DeclarationList* list = cs_create_declaration_list(decl);
@@ -22,7 +23,7 @@ DeclarationList* cs_chain_declaration(DeclarationList* decl_list, Declaration* d
     return decl_list;
 }
 
-
+/* 宣言した変数の情報を変数名から取得する */
 static Declaration* search_decls_from_list(DeclarationList* list, const char* name) {
     for(; list; list = list->next) {
         if (!strcmp(list->decl->name, name)) {
@@ -36,6 +37,7 @@ Declaration* cs_search_decl_in_block() {
     return NULL;
 }
 
+/* 宣言したグローバル変数の情報を変数名から取得する */
 Declaration* cs_search_decl_global(const char* name) {
     CS_Compiler* compiler = cs_get_current_compiler();
     return search_decls_from_list(compiler->decl_list, name);
