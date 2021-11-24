@@ -5,7 +5,7 @@
 #include "visitor.h"
 
 
-
+/* CS_Compilerを生成する */
 CS_Compiler* CS_create_compiler() {
     MEM_Storage storage;
     CS_Compiler *compiler;    
@@ -18,6 +18,7 @@ CS_Compiler* CS_create_compiler() {
     compiler->func_list = NULL;
     compiler->current_line = 1;
     
+    /* current_compilerに生成したコンパイラのポインタを渡す */
     cs_set_current_compiler(compiler);
     
     return compiler;
@@ -28,6 +29,11 @@ void CS_delete_compiler(CS_Compiler* compiler) {
     MEM_dispose(storage);
 }
 
+/*
+ * 意味解析を行う
+ * 変数宣言や関数宣言のインデックスを割り当てる
+ * 意味解析の結果を返す 成功 CS_TRUE 失敗 CS_FALSE
+ */
 static CS_Boolean do_mean_check(CS_Compiler* compiler) {
     MeanVisitor* mean_visitor = create_mean_visitor();
 
@@ -71,6 +77,10 @@ static CS_Boolean do_mean_check(CS_Compiler* compiler) {
     }    
 }
 
+/*
+ * yaccで解析してstatementのastのchainを生成する
+ * 意味解析できたらCS_TRUE/できなければCS_FALSEを返す
+ */
 CS_Boolean CS_compile(CS_Compiler* compiler, FILE *fin) {
     extern int yyparse(void);
     extern FILE *yyin;

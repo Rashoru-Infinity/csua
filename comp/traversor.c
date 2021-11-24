@@ -8,20 +8,24 @@ static void traverse_expr_children(Expression* expr, Visitor* visitor);
 static void traverse_stmt_children(Statement*  stmt, Visitor* visitor);
 
 
+/* 式をtraverseする */
 void traverse_expr(Expression* expr, Visitor* visitor) {
     if (expr) {
+		/* EXPRESSIONに対応する関数のポインタが与えられていない場合は何もできないのでプログラムを終了する */
         if (visitor->enter_expr_list[expr->kind] == NULL) {
             fprintf(stderr, "enter->type(%d) is null\n", expr->kind);
             exit(1);
         }
 
+		/* EXPRESSIONに対応するenterの関数を実行する */
         visitor->enter_expr_list[expr->kind](expr, visitor);
         traverse_expr_children(expr, visitor);
+		/* EXPRESSIONに対応するleaveの関数を実行する */
         visitor->leave_expr_list[expr->kind](expr, visitor);
-
     }    
 }
 
+/* 文をtraverseする */
 void traverse_stmt(Statement* stmt, Visitor* visitor) {
     if (stmt) {
         if (visitor->enter_stmt_list[stmt->type] == NULL) {
@@ -34,6 +38,7 @@ void traverse_stmt(Statement* stmt, Visitor* visitor) {
     }
 }
 
+/* 文中の式をtraverse_exprを呼び出してtraverseする */
 static void traverse_stmt_children(Statement* stmt, Visitor* visitor) {
     switch(stmt->type) {
         case EXPRESSION_STATEMENT: {
@@ -50,6 +55,7 @@ static void traverse_stmt_children(Statement* stmt, Visitor* visitor) {
     }
 }
 
+/* プリミティブ型や変数のexpression以外はtraverse_exprを呼び出してastを末端まで探索する */
 static void traverse_expr_children(Expression* expr, Visitor *visitor) {
     switch(expr->kind) {
         case BOOLEAN_EXPRESSION:

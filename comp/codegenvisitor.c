@@ -6,22 +6,24 @@
 #include "visitor.h"
 #include "../svm/svm.h"
 
-
+/* オペランドのサイズを取得する */
 static size_t get_opsize(OpcodeInfo *op) {
     size_t size = strlen(op->parameter);
     size *= 2;    
     return size;
 }
 
-
+/* 命令と引数からバイトコードを生成する */
 static void gen_byte_code(CodegenVisitor* visitor, SVM_Opcode op, ...) {
     va_list ap;
     va_start(ap, op);
     
+	/* 命令の種類を可変長引数で受け取ったindexから取得 */
     OpcodeInfo oInfo = svm_opcode_info[op];
     printf("-->%s\n", oInfo.opname);
     printf("-->%s\n", oInfo.parameter);
     
+	/* メモリのサイズが足りないときはメモリを(+10byte)リサイズする */
     // pos + 1byte + operator (1byte) + operand_size
     if ((visitor->pos + 1 + 1 + (get_opsize(&oInfo))) > visitor->current_code_size) {
         visitor->code = MEM_realloc(visitor->code,
@@ -30,11 +32,15 @@ static void gen_byte_code(CodegenVisitor* visitor, SVM_Opcode op, ...) {
     
     visitor->code[visitor->pos++] = op & 0xff;
     
+	/* 'i'の数だけint型引数を取る命令と解釈して処理をする */
     for (int i = 0; i < strlen(oInfo.parameter); ++i) {
         switch(oInfo.parameter[i]) {
+			/* 引数のある命令 */
             case 'i': { // 2byte index
                 int operand = va_arg(ap, int);
+				/* 2byteの内上位1byteを格納する */
                 visitor->code[visitor->pos++] = (operand >> 8) & 0xff;
+				/* 2byteの内下位1byteを格納する */
                 visitor->code[visitor->pos++] = operand        & 0xff;                
                 break;
             }
@@ -52,19 +58,9 @@ static void gen_byte_code(CodegenVisitor* visitor, SVM_Opcode op, ...) {
     printf("\n");
     */
     va_end(ap);
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
 }
 
+/* 定数プールに定数を1つ追加してインデックスを返す */
 static int add_constant(CS_Executable* exec, CS_ConstantPool* cpp) {
     exec->constant_pool = MEM_realloc(exec->constant_pool, 
             sizeof(CS_ConstantPool) * (exec->constant_pool_count+1));
@@ -92,6 +88,8 @@ static void enter_intexpr(Expression* expr, Visitor* visitor) {
 //    fprintf(stderr, "enter intexpr : %d\n", expr->u.int_value);
 
 }
+
+/* intの式をstackにpushするバイトコードをvisitorに渡す */
 static void leave_intexpr(Expression* expr, Visitor* visitor) {
 //    fprintf(stderr, "leave intexpr\n");
     CS_Executable* exec = ((CodegenVisitor*)visitor)->exec;
@@ -112,10 +110,13 @@ static void leave_doubleexpr(Expression* expr, Visitor* visitor) {
 static void enter_identexpr(Expression* expr, Visitor* visitor) {
 //    fprintf(stderr, "enter identifierexpr : %s\n", expr->u.identifier.name);
 }
+
+/* 変数や関数の式(参照や代入が行われる)のバイトコードを生成する */
 static void leave_identexpr(Expression* expr, Visitor* visitor) {
 //    fprintf(stderr, "leave identifierexpr\n");            
     CodegenVisitor* c_visitor = (CodegenVisitor*)visitor;
     switch (c_visitor->v_state) {
+		/* 参照 */
         case VISIT_NORMAL: {
 //            fprintf(stderr, "push value to stack\n");
             if (expr->u.identifier.is_function) {
@@ -145,6 +146,10 @@ static void leave_identexpr(Expression* expr, Visitor* visitor) {
             }
             break;
         }
+		/* 
+		 * 代入
+		 * 式の右辺をpushしてから左辺でpopする
+		 */
         case VISIT_NOMAL_ASSIGN: {
 //            fprintf(stderr, "store value to index\n");
             
@@ -401,7 +406,17 @@ static void leave_declstmt(Statement* stmt, Visitor* visitor) {
 //    fprintf(stderr, "leave declstmt\n");
 }
 
-
+/*
+ * CodegenVisitorのメモリを確保して
+ * - コンパイラ
+ * - バイトコード情報のポインタ
+ * - コードサイズ/使用領域
+ * - バイトコードポインタ
+ * - visit status
+ * - 代入の深さ
+ * - 関数ポインタ
+ * を設定する
+ */
 CodegenVisitor* create_codegen_visitor(CS_Compiler* compiler, CS_Executable *exec) {
     visit_expr* enter_expr_list;
     visit_expr* leave_expr_list;

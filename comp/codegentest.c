@@ -6,7 +6,7 @@
 #include "../memory/MEM.h"
 #include "../svm/svm.h"
 
-
+/* compilerが読み込んだグローバル変数をExecutableにコピーして変数の個数を格納する */
 static void copy_declaration(CS_Compiler* compiler, CS_Executable* exec) {
     DeclarationList* decl_list = compiler->decl_list;
     int size;
@@ -23,6 +23,7 @@ static void copy_declaration(CS_Compiler* compiler, CS_Executable* exec) {
     exec->global_variable_count = size;
 }
 
+/* ast chainからsvmで実行可能なバイトコードを生成して返す */
 static CS_Executable* code_generate(CS_Compiler* compiler) {
     CS_Executable* exec = (CS_Executable*)MEM_malloc(sizeof(CS_Executable));
     memset(exec, 0x0, sizeof(CS_Executable));
@@ -85,12 +86,14 @@ static void dump(DInfo *info) {
     info->index = 0;
 }
 
+/* DInfo(dump用)のバッファ内の文字列の終端に文字列を追加して終端にnull文字を入れる */
 static void add_string(DInfo *info, const char* str) {
     int len = strlen(str);
     strncpy(&info->buf[info->index], str, len);
     info->buf[info->index += len] = 0;
 }
 
+/* 16bit=2byte分の16進dumpをDInfoに詰める */
 static void add_uint16(DInfo *info, const uint16_t iv) {
     char buf[6];
     buf[0] = 0x20;
@@ -99,10 +102,12 @@ static void add_uint16(DInfo *info, const uint16_t iv) {
     add_string(info, buf);
 }
 
+/* バイトコードの逆アセンブルを出力する */
 static void exec_disasm(CS_Executable* exec) {
     
     fprintf(stderr, "< Disassemble Start >\n");
     fprintf(stderr, "-- global variables --\n");
+	/* グローバル変数 変数のindex(対応番号)と名前と型を出力 */
     for (int i = 0; i < exec->global_variable_count; ++i) {
         fprintf(stderr, "[%d]%s:%s ", i, exec->global_variable[i].name, 
                 get_type_name(exec->global_variable[i].type->basic_type));
@@ -110,6 +115,7 @@ static void exec_disasm(CS_Executable* exec) {
     }
     fprintf(stderr, "\n");
     fprintf(stderr, "-- constant pool --\n");
+	/* 定数 値を出力 */
     fprintf(stderr, "pool count = %d\n", exec->constant_pool_count);
     for (int i = 0; i < exec->constant_pool_count; ++i) {
         fprintf(stderr, "[%d]:", i);
@@ -129,8 +135,9 @@ static void exec_disasm(CS_Executable* exec) {
         }
 
     }
-               
+
     fprintf(stderr, "-- code --\n");
+	/* 1行に16bitずつ16進ダンプを出力する */
     for (int i = 0; i < exec->code_size; ++i) {
         if (i % 16 == 0) fprintf(stderr, "\n");
         fprintf(stderr, "%02x ", exec->code[i]);        
@@ -155,6 +162,7 @@ static void exec_disasm(CS_Executable* exec) {
             case SVM_POP:
             case SVM_ADD_INT:
             case SVM_INVOKE: {
+				/* 命令の名前をバッファに詰める */
                 add_string(&dinfo, oinfo->opname);
                 break;
             }
@@ -166,8 +174,8 @@ static void exec_disasm(CS_Executable* exec) {
         for (int j = 0; j < strlen(oinfo->parameter); ++j) {
             switch(oinfo->parameter[j]) {
                 case 'i': {
-                    uint8_t uv = code[++i];
-                    uint16_t op = (uint16_t)( uv << 8 | code[++i]);
+                    uint8_t uv = code[++i];	//上位8bit
+                    uint16_t op = (uint16_t)( uv << 8 | code[++i]);	//上位8bitと下位8bitを大きい方から並べる
                     add_uint16(&dinfo, op);
                     break;
                 }
@@ -177,11 +185,9 @@ static void exec_disasm(CS_Executable* exec) {
                 }
             }
         }
+		/* 16進ダンプを出力する */
         dump(&dinfo);
     }
-
-
-
     fprintf(stderr, "\n< Disassemble End >\n");
 }
 

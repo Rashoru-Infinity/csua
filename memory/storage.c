@@ -28,6 +28,7 @@ struct MEM_Storage_tag {
     int            current_page_size;  // number of pages
 };
 
+/* 渡されたページサイズのstorage tagを取得する */
 MEM_Storage MEM_open_storage_func(MEM_Controller controller,
         char* filename, int line, int page_size) {    
     MEM_Storage storage;
@@ -44,9 +45,11 @@ void* MEM_storage_malloc_func(MEM_Controller controller, char* filename, int lin
 
     int cellnum = ((size - 1) / CELL_SIZE) + 1;    
 //    fprintf(stderr, "cellnum = %d\n", cellnum);
+	/* storageのpage_listがNULLなら指定されたページサイズ分だけセルを確保してアドレスを返す */
     if (storage->page_list == NULL) { /* do not keep enough memory*/
 //        fprintf(stderr, "new_page_list\n");
         int alloc_num = cellnum > storage->current_page_size ? cellnum : storage->current_page_size;
+		/* MemoryPage分の大きさと必要なcellの個数分のメモリを確保する */
         MemoryPageList page_list = (MemoryPageList)MEM_malloc_func(controller, filename, line, sizeof(MemoryPage) 
                 + (alloc_num - 1) * CELL_SIZE);
 //        fprintf(stderr, "MemoryPage size: %d, alloc_num: %d, cellsize: %d\n", (int)sizeof(MemoryPage), (int)alloc_num, (int)CELL_SIZE);
@@ -55,12 +58,13 @@ void* MEM_storage_malloc_func(MEM_Controller controller, char* filename, int lin
         page_list->use_cell_num = cellnum;
         page_list->next = NULL;
         storage->page_list = page_list;
+		/* 確保したセルの先頭アドレスを返す */
         return &page_list->cell[0];        
     } else {
-
         MemoryPageList current_page_list = storage->page_list;
 //        fprintf(stderr, "current_size = %d, use_cell = %d, required_cell=%d\n", storage->current_page_size, current_page_list->use_cell_num, cellnum);
         while (current_page_list->next != NULL) current_page_list = current_page_list->next; // move to the last                        
+		/* セルが足りていないときはページを付け足す */
         if (storage->current_page_size - (current_page_list->use_cell_num + cellnum) < 0) {
 //            fprintf(stderr, "page is NOT enough\n");
             int alloc_num = cellnum > storage->current_page_size ? cellnum : storage->current_page_size;
@@ -70,8 +74,10 @@ void* MEM_storage_malloc_func(MEM_Controller controller, char* filename, int lin
             page_list->use_cell_num = alloc_num;
             page_list->next = NULL;
             current_page_list->next = page_list;
+			/* 確保したセルの先頭アドレスを返す */
             return &page_list->cell[0];        
         } else {
+			/* 使用可能なセルが十分に確保されている時は使用可能な先頭のメモリのアドレスを返す */
 //            fprintf(stderr, "page is enough\n");
             int available_index = current_page_list->use_cell_num;
             current_page_list->use_cell_num += cellnum;
@@ -81,7 +87,7 @@ void* MEM_storage_malloc_func(MEM_Controller controller, char* filename, int lin
     return NULL;
 }
 
-
+/* 確保したメモリをすべて開放する */
 void MEM_dispose_func(MEM_Controller controller, MEM_Storage storage) {
     MemoryPage *tmp;
     while (storage->page_list) {
