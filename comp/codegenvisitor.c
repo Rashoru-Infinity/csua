@@ -116,7 +116,7 @@ static void leave_identexpr(Expression* expr, Visitor* visitor) {
 //    fprintf(stderr, "leave identifierexpr\n");            
     CodegenVisitor* c_visitor = (CodegenVisitor*)visitor;
     switch (c_visitor->v_state) {
-		/* 参照 */
+		/* 代入の右辺を含む通常状態 push系の命令を生成する */
         case VISIT_NORMAL: {
 //            fprintf(stderr, "push value to stack\n");
             if (expr->u.identifier.is_function) {
@@ -146,10 +146,7 @@ static void leave_identexpr(Expression* expr, Visitor* visitor) {
             }
             break;
         }
-		/* 
-		 * 代入
-		 * 式の右辺をpushしてから左辺でpopする
-		 */
+		/* 代入の左辺を訪問する時 pop系の命令を生成する */
         case VISIT_NOMAL_ASSIGN: {
 //            fprintf(stderr, "store value to index\n");
             
@@ -210,6 +207,7 @@ static void leave_identexpr(Expression* expr, Visitor* visitor) {
 static void enter_addexpr(Expression* expr, Visitor* visitor) {
 //    fprintf(stderr, "enter addexpr : +\n");
 }
+/* 足し算の式のバイトコードを生成する */
 static void leave_addexpr(Expression* expr, Visitor* visitor) {
 //    fprintf(stderr, "leave addexpr\n");
     switch(expr->type->basic_type) {
@@ -346,12 +344,15 @@ static void enter_assignexpr(Expression* expr, Visitor* visitor) {
 //    fprintf(stderr, "enter assignexpr : %d \n", expr->u.assignment_expression.aope);
     ((CodegenVisitor*)visitor)->assign_depth++;
 }
+
+/* 代入の深さ(a = b = c = ...のこと)を1減らす */
 static void leave_assignexpr(Expression* expr, Visitor* visitor) {
 //    fprintf(stderr, "leave assignexpr\n");
     --((CodegenVisitor*)visitor)->assign_depth;
 //    ((CodegenVisitor*)visitor)->v_state = VISIT_NORMAL;
 }
 
+/* 代入の左辺を訪問中であるという状態に遷移する */
 static void notify_assignexpr(Expression* expr, Visitor* visitor) {
 //    fprintf(stderr, "NOTIFY assignexpr : %d \n", expr->u.assignment_expression.aope);
     ((CodegenVisitor*)visitor)->v_state = VISIT_NOMAL_ASSIGN;    
@@ -370,6 +371,11 @@ static void enter_exprstmt(Statement* stmt, Visitor* visitor) {
 //    fprintf(stderr, "enter exprstmt :\n");
 
 }
+
+/*
+ * 式文の終端を認識したときに代入文の時はVisitStateを元に戻す
+ * それ以外ならスタックの値を捨てる
+ */
 static void leave_exprstmt(Statement* stmt, Visitor* visitor) {
 //    fprintf(stderr, "leave exprstmt\n");
     
