@@ -108,7 +108,10 @@ static void write_char(char c, FILE* fp) {
     fwrite(&c, 1, 1, fp);
 }
 
-/* LittleEndian<->BigEndian */
+/*
+ * LittleEndian<->BigEndian
+ * C言語はLittleEndianなのでBigEndianに変換して書き込み
+ */
 static void write_reverse(const void* pv, size_t size, FILE* fp) {
     char* p = (char*)pv;
     for (int i = size - 1; i >= 0; --i) {
