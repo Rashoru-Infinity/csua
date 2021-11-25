@@ -131,9 +131,11 @@ static int count_stack_size(uint8_t* code, size_t len) {
     int st_size = 0;
     for(int i = 0; i < len; ++i) {
         OpcodeInfo *oinfo = &svm_opcode_info[code[i]];
+		/* 命令の長さだけstackのサイズを足し上げる */
         if (oinfo->s_size > 0) {
             st_size += oinfo->s_size;
-        }
+        }
+		/* 引数の値のindexの2byte分を引数の数だけインデックスをずらして次の命令までジャンプする */
         for (int j = 0; j < strlen(oinfo->parameter); ++j) {
             switch(oinfo->parameter[j]) {
                 case 'i': {
@@ -150,6 +152,7 @@ static int count_stack_size(uint8_t* code, size_t len) {
     return st_size;
 }
 
+/* 生成したバイトコードをバイナリファイルに出力する */
 static void serialize(CS_Executable* exec){
     FILE *fp;
     
@@ -157,6 +160,7 @@ static void serialize(CS_Executable* exec){
         fprintf(stderr, "Error\n");
         exit(1);
     }
+	/* ヘッダの書き出し */
     write_char('C', fp);
     write_char('A', fp);    
     write_char('P', fp);
@@ -167,16 +171,22 @@ static void serialize(CS_Executable* exec){
     write_char('A', fp);
     
 //    printf("global len = %d\n", exec->global_variable_count);
+	/* ConstantPool内の定数の個数を4byte領域に書き出す */
     write_int(exec->constant_pool_count, fp);
+	/* ConstantPool内の定数の型と値を値を書き込む */
     for (int i = 0; i < exec->constant_pool_count; ++i) {
         switch(exec->constant_pool[i].type) {
             case CS_CONSTANT_INT: {
+				/* int型という情報を1byte領域に書き込む */
                 write_char(SVM_INT, fp);
+				/* int型は4byte領域に書き込む */
                 write_int(exec->constant_pool[i].u.c_int, fp);
                 break;
             }
             case CS_CONSTANT_DOUBLE: {
+				/* double型という情報を1byte領域に書き込む */
                 write_char(SVM_DOUBLE, fp);
+				/* double型は8byte領域に書き込む */
                 write_double(exec->constant_pool[0].u.c_double, fp);
                 break;
             }
@@ -189,8 +199,9 @@ static void serialize(CS_Executable* exec){
     }
     
     
-    
+    /* グローバル変数の個数を4byte領域に書き込む */
     write_int(exec->global_variable_count, fp);
+	/* グローバル変数の型情報を書き込む */
     for (int i = 0; i < exec->global_variable_count; ++i) {
         switch(exec->global_variable[i].type->basic_type) {
             case CS_BOOLEAN_TYPE:
@@ -209,13 +220,13 @@ static void serialize(CS_Executable* exec){
                 
         }
     }
-    
-    
-    
+	/* コードサイズを4byte領域に書き込む */ 
     write_int(exec->code_size, fp);
+	/* コードの実体を書き込む */
     write_bytes(exec->code, exec->code_size, fp);
     int stack_size = count_stack_size(exec->code, exec->code_size);
 //    printf("s_size = %d\n", stack_size);
+	/* stackのサイズを4byte領域に書き込む */
     write_int(stack_size, fp);
     
     fclose(fp);
