@@ -13,6 +13,7 @@ CS_Compiler* cs_get_current_compiler() {
     return current_compiler;
 }
 
+/* 宣言文のリストの末端に要素を追加する */
 DeclarationList* cs_chain_declaration(DeclarationList* decl_list, Declaration* decl) {
     DeclarationList* p;    
     DeclarationList* list = cs_create_declaration_list(decl);
@@ -22,6 +23,7 @@ DeclarationList* cs_chain_declaration(DeclarationList* decl_list, Declaration* d
     return decl_list;
 }
 
+/* 文のリストの末端に要素を追加する */
 StatementList* cs_chain_statement_list(StatementList* stmt_list, Statement* stmt) {
     StatementList* p = NULL;
     StatementList* nstmt_list = cs_create_statement_list(stmt);
@@ -34,7 +36,7 @@ StatementList* cs_chain_statement_list(StatementList* stmt_list, Statement* stmt
     return stmt_list;
 }
 
-
+/* 関数のリストの末端に要素を追加する */
 FunctionDeclarationList* cs_chain_function_declaration_list(FunctionDeclarationList* func_list, FunctionDeclaration* func) {
     FunctionDeclarationList* p = NULL;
     FunctionDeclarationList* nfunc_list = cs_create_function_declaration_list(func);
@@ -48,6 +50,7 @@ FunctionDeclarationList* cs_chain_function_declaration_list(FunctionDeclarationL
 
 
 
+/* 宣言した変数の情報を変数名から取得する */
 static Declaration* search_decls_from_list(DeclarationList* list, const char* name) {
     for(; list; list = list->next) {
         if (!strcmp(list->decl->name, name)) {
@@ -61,11 +64,13 @@ Declaration* cs_search_decl_in_block() {
     return NULL;
 }
 
+/* 宣言したグローバル変数の情報を変数名から取得する */
 Declaration* cs_search_decl_global(const char* name) {
     CS_Compiler* compiler = cs_get_current_compiler();
     return search_decls_from_list(compiler->decl_list, name);
 }
 
+/* 宣言した変数の情報を関数名から取得する */
 static FunctionDeclaration* search_function_from_list(FunctionDeclarationList* list, const char* name) {
     for (;list; list = list->next) {
        if (!strcmp(list->func->name, name)) {
@@ -75,6 +80,7 @@ static FunctionDeclaration* search_function_from_list(FunctionDeclarationList* l
     return NULL;
 }
 
+/* 宣言したグローバル関数の情報を関数名から取得する */
 FunctionDeclaration* cs_search_function(const char* name) {
     CS_Compiler* compiler = cs_get_current_compiler();
     return search_function_from_list(compiler->func_list, name);
