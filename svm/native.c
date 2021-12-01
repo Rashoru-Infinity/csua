@@ -9,6 +9,7 @@ static SVM_Value native_print(SVM_VirtualMachine* svm, SVM_Value* values, int ar
     return v;    
 }
 
+/* svmにネイティブ関数を追加する */
 void add_native_functions(SVM_VirtualMachine* svm) {
     svm_add_native_function(svm, native_print, "print", 0);
 }
