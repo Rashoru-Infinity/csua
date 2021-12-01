@@ -8,7 +8,7 @@
 #include "../memory/MEM.h"
 #include "../svm/svm.h"
 
-
+/* compilerが読み込んだグローバル変数をExecutableにコピーして変数の個数を格納する */
 static void copy_declaration(CS_Compiler* compiler, CS_Executable* exec) {
     DeclarationList* decl_list = compiler->decl_list;
     int size;
@@ -25,6 +25,7 @@ static void copy_declaration(CS_Compiler* compiler, CS_Executable* exec) {
     exec->global_variable_count = size;
 }
 
+/* ast chainからsvmで実行可能なバイトコードを生成して返す */
 static CS_Executable* code_generate(CS_Compiler* compiler) {
     CS_Executable* exec = (CS_Executable*)MEM_malloc(sizeof(CS_Executable));
     memset(exec, 0x0, sizeof(CS_Executable));
@@ -87,12 +88,14 @@ static void dump(DInfo *info) {
     info->index = 0;
 }
 
+/* DInfo(dump用)のバッファ内の文字列の終端に文字列を追加して終端にnull文字を入れる */
 static void add_string(DInfo *info, const char* str) {
     int len = strlen(str);
     strncpy(&info->buf[info->index], str, len);
     info->buf[info->index += len] = 0;
 }
 
+/* 16bit=2byte分の16進dumpをDInfoに詰める */
 static void add_uint16(DInfo *info, const uint16_t iv) {
     char buf[6];
     buf[0] = 0x20;
@@ -101,11 +104,14 @@ static void add_uint16(DInfo *info, const uint16_t iv) {
     add_string(info, buf);
 }
 
-
 static void write_char(char c, FILE* fp) {
     fwrite(&c, 1, 1, fp);
 }
 
+/*
+ * LittleEndian<->BigEndian
+ * C言語はLittleEndianなのでBigEndianに変換して書き込み
+ */
 static void write_reverse(const void* pv, size_t size, FILE* fp) {
     char* p = (char*)pv;
     for (int i = size - 1; i >= 0; --i) {
@@ -129,9 +135,11 @@ static int count_stack_size(uint8_t* code, size_t len) {
     int st_size = 0;
     for(int i = 0; i < len; ++i) {
         OpcodeInfo *oinfo = &svm_opcode_info[code[i]];
+		/* 命令の長さだけstackのサイズを足し上げる */
         if (oinfo->s_size > 0) {
             st_size += oinfo->s_size;
-        }
+        }
+		/* 引数の値のindexの2byte分を引数の数だけインデックスをずらして次の命令までジャンプする */
         for (int j = 0; j < strlen(oinfo->parameter); ++j) {
             switch(oinfo->parameter[j]) {
                 case 'i': {
@@ -148,6 +156,7 @@ static int count_stack_size(uint8_t* code, size_t len) {
     return st_size;
 }
 
+/* 生成したバイトコードをバイナリファイルに出力する */
 static void serialize(CS_Executable* exec){
     FILE *fp;
     
@@ -155,6 +164,7 @@ static void serialize(CS_Executable* exec){
         fprintf(stderr, "Error\n");
         exit(1);
     }
+	/* ヘッダの書き出し */
     write_char('C', fp);
     write_char('A', fp);    
     write_char('P', fp);
@@ -165,16 +175,22 @@ static void serialize(CS_Executable* exec){
     write_char('A', fp);
     
 //    printf("global len = %d\n", exec->global_variable_count);
+	/* ConstantPool内の定数の個数を4byte領域に書き出す */
     write_int(exec->constant_pool_count, fp);
+	/* ConstantPool内の定数の型と値を値を書き込む */
     for (int i = 0; i < exec->constant_pool_count; ++i) {
         switch(exec->constant_pool[i].type) {
             case CS_CONSTANT_INT: {
+				/* int型という情報を1byte領域に書き込む */
                 write_char(SVM_INT, fp);
+				/* int型は4byte領域に書き込む */
                 write_int(exec->constant_pool[i].u.c_int, fp);
                 break;
             }
             case CS_CONSTANT_DOUBLE: {
+				/* double型という情報を1byte領域に書き込む */
                 write_char(SVM_DOUBLE, fp);
+				/* double型は8byte領域に書き込む */
                 write_double(exec->constant_pool[0].u.c_double, fp);
                 break;
             }
@@ -187,8 +203,9 @@ static void serialize(CS_Executable* exec){
     }
     
     
-    
+    /* グローバル変数の個数を4byte領域に書き込む */
     write_int(exec->global_variable_count, fp);
+	/* グローバル変数の型情報を書き込む */
     for (int i = 0; i < exec->global_variable_count; ++i) {
         switch(exec->global_variable[i].type->basic_type) {
             case CS_BOOLEAN_TYPE:
@@ -207,22 +224,24 @@ static void serialize(CS_Executable* exec){
                 
         }
     }
-    
-    
-    
+	/* コードサイズを4byte領域に書き込む */ 
     write_int(exec->code_size, fp);
+	/* コードの実体を書き込む */
     write_bytes(exec->code, exec->code_size, fp);
     int stack_size = count_stack_size(exec->code, exec->code_size);
 //    printf("s_size = %d\n", stack_size);
+	/* stackのサイズを4byte領域に書き込む */
     write_int(stack_size, fp);
     
     fclose(fp);
 }
 
+/* バイトコードの逆アセンブルを出力する */
 static void exec_disasm(CS_Executable* exec) {
     
     fprintf(stderr, "< Disassemble Start >\n");
     fprintf(stderr, "-- global variables --\n");
+	/* グローバル変数 変数のindex(対応番号)と名前と型を出力 */
     for (int i = 0; i < exec->global_variable_count; ++i) {
         fprintf(stderr, "[%d]%s:%s ", i, exec->global_variable[i].name, 
                 get_type_name(exec->global_variable[i].type->basic_type));
@@ -230,6 +249,7 @@ static void exec_disasm(CS_Executable* exec) {
     }
     fprintf(stderr, "\n");
     fprintf(stderr, "-- constant pool --\n");
+	/* 定数 値を出力 */
     fprintf(stderr, "pool count = %d\n", exec->constant_pool_count);
     for (int i = 0; i < exec->constant_pool_count; ++i) {
         fprintf(stderr, "[%d]:", i);
@@ -249,8 +269,9 @@ static void exec_disasm(CS_Executable* exec) {
         }
 
     }
-               
+
     fprintf(stderr, "-- code --\n");
+	/* 1行に16bitずつ16進ダンプを出力する */
     for (int i = 0; i < exec->code_size; ++i) {
         if (i % 16 == 0) fprintf(stderr, "\n");
         fprintf(stderr, "%02x ", exec->code[i]);        
@@ -275,6 +296,7 @@ static void exec_disasm(CS_Executable* exec) {
             case SVM_POP:
             case SVM_ADD_INT:
             case SVM_INVOKE: {
+				/* 命令の名前をバッファに詰める */
                 add_string(&dinfo, oinfo->opname);
                 break;
             }
@@ -286,8 +308,8 @@ static void exec_disasm(CS_Executable* exec) {
         for (int j = 0; j < strlen(oinfo->parameter); ++j) {
             switch(oinfo->parameter[j]) {
                 case 'i': {
-                    uint8_t uv = code[++i];
-                    uint16_t op = (uint16_t)( uv << 8 | code[++i]);
+                    uint8_t uv = code[++i];	//上位8bit
+                    uint16_t op = (uint16_t)( uv << 8 | code[++i]);	//上位8bitと下位8bitを大きい方から並べる
                     add_uint16(&dinfo, op);
                     break;
                 }
@@ -297,11 +319,9 @@ static void exec_disasm(CS_Executable* exec) {
                 }
             }
         }
+		/* 16進ダンプを出力する */
         dump(&dinfo);
     }
-
-
-
     fprintf(stderr, "\n< Disassemble End >\n");
 }
 
