@@ -209,7 +209,7 @@ typedef struct ExpressionList_tag {
 typedef struct StatementList_tag {
     Statement *stmt;
     struct StatementList_tag *next;
-};
+} StatementList;
 
 typedef struct DeclarationList_tag {
     Declaration* decl;
@@ -286,7 +286,7 @@ Statement* cs_create_expression_statement(Expression* expr);
 Statement* cs_create_declaration_statement(CS_BasicType type, char* name, Expression* initializer);
 StatementList* cs_create_statement_list(Statement* stmt);
 ForkingStatement* cs_create_forking_statement(IfStatement *if_statement, ElsifStatement *elsif_statement, StatementList *else_statement);
-IfStatement* cs_create_if_statement(Expression *condition, Statement *statement_list);
+IfStatement* cs_create_if_statement(Expression *condition, StatementList *statement_list);
 ElsifStatement* cs_chain_elsif_statement(ElsifStatement *dest, Expression *condition, StatementList *statement_list);
 
 

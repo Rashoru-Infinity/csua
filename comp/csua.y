@@ -113,7 +113,7 @@ definition_or_statement_list
 statement_list
         : statement_list broad_statement
 		{
-			$$ = cs_chain_statement_list(NULL, $1);
+			$$ = cs_chain_statement_list($1, $2);
 		}
         | broad_statement
 		{
