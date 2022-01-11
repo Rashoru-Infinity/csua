@@ -1,9 +1,0 @@
-csua.y: warning: 12 shift/reduce conflicts [-Wconflicts-sr]
-y.tab.c: In function ‘yyparse’:
-y.tab.c:1465:16: warning: implicit declaration of function ‘yylex’ [-Wimplicit-function-declaration]
- 1465 |       yychar = yylex ();
-      |                ^~~~~
-y.tab.c:2007:7: warning: implicit declaration of function ‘yyerror’; did you mean ‘yyerrok’? [-Wimplicit-function-declaration]
- 2007 |       yyerror (YY_("syntax error"));
-      |       ^~~~~~~
-      |       yyerrok
