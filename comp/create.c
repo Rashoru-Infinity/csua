@@ -207,17 +207,22 @@ IfStatement *cs_create_if_statement(Expression *condition, StatementList *statem
 static ElsifStatement *cs_create_elsif_statement(IfStatement *elsif_statement) {
 	ElsifStatement *stmt = (ElsifStatement *)cs_malloc(sizeof(ElsifStatement));
 	stmt->elsif_statement = elsif_statement;
+	stmt->next_elsif_stmt = NULL;
 	return stmt;
 }
 
 ElsifStatement *cs_chain_elsif_statement(ElsifStatement *dest, Expression *condition, StatementList *statement_list) {
 	IfStatement *elsif_statement = cs_create_if_statement(condition, statement_list);
 	ElsifStatement *to_append = cs_create_elsif_statement(elsif_statement);
+	ElsifStatement *p = dest;
 	if (!dest) {
 		return to_append;
 	}
-	to_append->next_elsif_stmt = dest;
-	return to_append;
+	while (p->next_elsif_stmt) {
+		p = p->next_elsif_stmt;
+	}
+	p->next_elsif_stmt = to_append;
+	return dest;
 }
 
 StatementList* cs_create_statement_list(Statement* stmt) {

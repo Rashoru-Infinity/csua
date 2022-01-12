@@ -1,4 +1,5 @@
 *.o
+.*.*.swp
 y.tab.c
 y.tab.h
 y.output
@@ -11,4 +12,4 @@ treet
 meant
 cgent
 disasm
-svm
+svm/svm

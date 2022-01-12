@@ -44,6 +44,32 @@ static void traverse_stmt_children(Statement* stmt, Visitor* visitor) {
             traverse_expr(stmt->u.declaration_s->initializer, visitor);
             break;
         }
+		case IF_STATEMENT: {
+			traverse_expr(stmt->u.if_statement_s->if_statement->condition, visitor);
+			StatementList *stmt_list = stmt->u.if_statement_s->if_statement->statement_list;
+			while (stmt_list) {
+				traverse_stmt(stmt_list->stmt, visitor);
+				stmt_list = stmt_list->next;
+			}
+			ElsifStatement *elsif_stmt_list = stmt->u.if_statement_s->elsif_statement;
+			while (elsif_stmt_list) {
+				traverse_expr(elsif_stmt_list->elsif_statement->condition, visitor);
+				stmt_list = elsif_stmt_list->elsif_statement->statement_list;
+				while (stmt_list) {
+					traverse_stmt(stmt_list->stmt, visitor);
+					stmt_list = stmt_list->next;
+				}
+				elsif_stmt_list = elsif_stmt_list->next_elsif_stmt;
+			}
+			if (stmt->u.if_statement_s->else_statement) {
+				stmt_list = stmt->u.if_statement_s->else_statement;
+				while (stmt_list) {
+					traverse_stmt(stmt_list->stmt, visitor);
+					stmt_list = stmt_list->next;
+				}
+			}
+			break;
+		}
         default: {
             fprintf(stderr, "No such stmt->type %d in traverse_stmt_children\n", stmt->type);
         }

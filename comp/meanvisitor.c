@@ -571,6 +571,13 @@ static void leave_declstmt(Statement* stmt, Visitor* visitor) {
     }
 }
 
+static void enter_ifstmt(Statement* stmt, Visitor* visitor) {
+    //fprintf(stderr, "enter ifstmt\n");
+}
+static void leave_ifstmt(Statement* stmt, Visitor* visitor) {
+    //fprintf(stderr, "leave ifstmt\n");
+}
+
 
 MeanVisitor* create_mean_visitor() {
     visit_expr* enter_expr_list;
@@ -622,6 +629,7 @@ MeanVisitor* create_mean_visitor() {
     
     enter_stmt_list[EXPRESSION_STATEMENT]     = enter_exprstmt;
     enter_stmt_list[DECLARATION_STATEMENT]    = enter_declstmt;
+    enter_stmt_list[IF_STATEMENT]             = enter_ifstmt;
     
     
     
@@ -653,6 +661,7 @@ MeanVisitor* create_mean_visitor() {
     
     leave_stmt_list[EXPRESSION_STATEMENT]     = leave_exprstmt;
     leave_stmt_list[DECLARATION_STATEMENT]    = leave_declstmt;
+    leave_stmt_list[IF_STATEMENT]             = leave_ifstmt;
     
 
     ((Visitor*)visitor)->enter_expr_list = enter_expr_list;
