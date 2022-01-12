@@ -77,7 +77,7 @@
                  
 %type <assignment_operator> assignment_operator
 %type <type_specifier> type_specifier
-%type <statement_list> statement_list
+%type <statement_list> statement_list nest
 %type <statement> broad_statement statement declaration_statement
 %type <forking_statement> if_statement
 %type <elsif_statement> elsif_list
@@ -142,44 +142,55 @@ broad_statement
         ;
 
 if_statement
-        : IF LP expression RP LC statement_list RC elsif_list ELSE LC statement_list RC
+        : IF LP expression RP nest elsif_list ELSE nest
 		{
 			CS_Compiler *compiler = cs_get_current_compiler();
-			IfStatement *if_statement = cs_create_if_statement($3, $6);
-			ForkingStatement *forking_statement = cs_create_forking_statement(if_statement,  $8, $11);
+			IfStatement *if_statement = cs_create_if_statement($3, $5);
+			ForkingStatement *forking_statement = cs_create_forking_statement(if_statement,  $6, $8);
 			$$ = forking_statement;
 		}
-		| IF LP expression RP LC statement_list RC elsif_list
+		| IF LP expression RP nest elsif_list
 		{
 			CS_Compiler *compiler = cs_get_current_compiler();
-			IfStatement *if_statement = cs_create_if_statement($3, $6);
-			ForkingStatement *forking_statement = cs_create_forking_statement(if_statement,  $8, NULL);
+			IfStatement *if_statement = cs_create_if_statement($3, $5);
+			ForkingStatement *forking_statement = cs_create_forking_statement(if_statement,  $6, NULL);
 			$$ = forking_statement;
 		}
-        | IF LP expression RP LC statement_list RC ELSE LC statement_list RC
+        | IF LP expression RP nest ELSE nest
 		{
-			IfStatement *if_statement = cs_create_if_statement($3, $6);
-			ForkingStatement *forking_statement = cs_create_forking_statement(if_statement, NULL, $10);
+			IfStatement *if_statement = cs_create_if_statement($3, $5);
+			ForkingStatement *forking_statement = cs_create_forking_statement(if_statement, NULL, $7);
 			$$ = forking_statement;
 		}
-        | IF LP expression RP LC statement_list RC
+        | IF LP expression RP nest
 		{
-			IfStatement *if_statement = cs_create_if_statement($3, $6);
+			IfStatement *if_statement = cs_create_if_statement($3, $5);
 			ForkingStatement *forking_statement = cs_create_forking_statement(if_statement, NULL, NULL);
 			$$ = forking_statement;
 		}
         ;
 
 elsif_list
-        : elsif_list ELSIF LP expression RP LC statement_list RC
+        : elsif_list ELSIF LP expression RP nest
 		{
-			$$ = cs_chain_elsif_statement($1, $4, $7);
+			$$ = cs_chain_elsif_statement($1, $4, $6);
 		}
-        | ELSIF LP expression RP LC statement_list RC
+        | ELSIF LP expression RP nest
 		{
-			$$ = cs_chain_elsif_statement(NULL, $3, $6);
+			$$ = cs_chain_elsif_statement(NULL, $3, $5);
 		}
         ;
+
+nest
+		: LC statement_list RC
+		{
+			$$ = $2;
+		}
+		| LC RC
+		{
+			$$ = NULL;
+		}
+		;
 
 function_definition
         : type_specifier IDENTIFIER LP RP SEMICOLON { $$ = cs_create_function_declaration($1, $2, NULL);}    
